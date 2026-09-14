@@ -4,7 +4,9 @@ class ApiClient {
   private static instance: ApiClient;
 
   private constructor() {
-    const baseURL = 'https://automatedschedule.onrender.com/api';
+    const baseURL = import.meta.env.DEV
+    ? '/api'
+    : 'https://automatedschedule.onrender.com/api';
 
     this.client = axios.create({
       baseURL: baseURL,
