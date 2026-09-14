@@ -2,25 +2,32 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { enrollmentService } from '../services/enrollment.service';
 import { useToast } from '../hooks/useToast';
-import type { 
-  EnrollmentApplication,        // ← This is imported but needs to be used
-  EnrollmentApplicationWithDetails, 
-  EnrollmentFilters 
-} from '../types';
+import type { EnrollmentFilters } from '../types';
+import type {
+  EnrollmentApplication,
+  EnrollmentApplicationWithDetails,
+} from '../types/enrollment';
 
+// ============================================
+// CONTEXT TYPE
+// ============================================
 interface EnrollmentContextType {
   applications: EnrollmentApplicationWithDetails[];
   isLoading: boolean;
   fetchApplications: (filters?: EnrollmentFilters) => Promise<void>;
   getApplication: (id: string) => Promise<EnrollmentApplicationWithDetails | null>;
+  getApplicationById: (id: string) => Promise<EnrollmentApplication | null>;
   updateStatus: (id: string, status: string, notes?: string) => Promise<void>;
   requestCorrection: (id: string, notes: string) => Promise<void>;
   totalCount: number;
   pendingCount: number;
   approvedCount: number;
   rejectedCount: number;
-  // Add a method that uses EnrollmentApplication
-  getApplicationById: (id: string) => Promise<EnrollmentApplication | null>;
+  // Derived stats by enrollment type
+  newStudentCount: number;
+  continuingCount: number;
+  returneeCount: number;
+  transfereeCount: number;
 }
 
 const EnrollmentContext = createContext<EnrollmentContextType | undefined>(undefined);
@@ -30,6 +37,9 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
+  // ============================================
+  // FETCH APPLICATIONS
+  // ============================================
   const fetchApplications = useCallback(
     async (filters: EnrollmentFilters = {}) => {
       setIsLoading(true);
@@ -47,6 +57,9 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
     [showToast]
   );
 
+  // ============================================
+  // GET SINGLE APPLICATION (with details)
+  // ============================================
   const getApplication = useCallback(
     async (id: string): Promise<EnrollmentApplicationWithDetails | null> => {
       try {
@@ -63,15 +76,17 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
     [showToast]
   );
 
-  // NEW: Method that uses EnrollmentApplication type
+  // ============================================
+  // GET APPLICATION BY ID (base type only)
+  // ============================================
   const getApplicationById = useCallback(
     async (id: string): Promise<EnrollmentApplication | null> => {
       try {
         const response = await enrollmentService.getApplication(id);
         if (response.success && response.data) {
-          // Return only the base EnrollmentApplication data
+          // Strip detail fields to return only the base type
           const { student, section, courses, ...baseApplication } = response.data;
-          return baseApplication as EnrollmentApplication;
+          return baseApplication;
         }
         return null;
       } catch (error: any) {
@@ -82,6 +97,9 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
     [showToast]
   );
 
+  // ============================================
+  // UPDATE STATUS
+  // ============================================
   const updateStatus = useCallback(
     async (id: string, status: string, notes?: string) => {
       try {
@@ -98,6 +116,9 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
     [fetchApplications, showToast]
   );
 
+  // ============================================
+  // REQUEST CORRECTION
+  // ============================================
   const requestCorrection = useCallback(
     async (id: string, notes: string) => {
       try {
@@ -114,11 +135,39 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
     [fetchApplications, showToast]
   );
 
+  // ============================================
+  // DERIVED COUNTS
+  // ============================================
   const totalCount = applications.length;
-  const pendingCount = applications.filter((a) => a.status === 'under_review' || a.status === 'submitted').length;
+
+  const pendingCount = applications.filter(
+    (a) => a.status === 'under_review' || a.status === 'submitted'
+  ).length;
+
   const approvedCount = applications.filter((a) => a.status === 'approved').length;
+
   const rejectedCount = applications.filter((a) => a.status === 'rejected').length;
 
+  // Counts by enrollment type
+  const newStudentCount = applications.filter(
+    (a) => a.enrollment_type === 'new'
+  ).length;
+
+  const continuingCount = applications.filter(
+    (a) => a.enrollment_type === 'continuing'
+  ).length;
+
+  const returneeCount = applications.filter(
+    (a) => a.enrollment_type === 'returnee'
+  ).length;
+
+  const transfereeCount = applications.filter(
+    (a) => a.enrollment_type === 'transferee'
+  ).length;
+
+  // ============================================
+  // PROVIDER VALUE
+  // ============================================
   return (
     <EnrollmentContext.Provider
       value={{
@@ -126,13 +175,17 @@ export function EnrollmentProvider({ children }: { children: ReactNode }) {
         isLoading,
         fetchApplications,
         getApplication,
-        getApplicationById,  // ← Add the new method
+        getApplicationById,
         updateStatus,
         requestCorrection,
         totalCount,
         pendingCount,
         approvedCount,
         rejectedCount,
+        newStudentCount,
+        continuingCount,
+        returneeCount,
+        transfereeCount,
       }}
     >
       {children}
@@ -147,3 +200,5 @@ export function useEnrollment() {
   }
   return context;
 }
+
+export default EnrollmentContext;
