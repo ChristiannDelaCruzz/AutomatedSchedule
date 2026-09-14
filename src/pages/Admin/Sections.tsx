@@ -22,30 +22,49 @@ import { sectionService, SectionFilters } from '../../services/section.service';
 import type { Section } from '../../types';
 
 // ============================================
-// STAT CARD
+// STAT CARD (now supports optional trend)
 // ============================================
 const StatCard = ({
   icon: Icon,
   label,
   value,
   color,
+  trend,
+  subtitle,
 }: {
   icon: React.ElementType;
   label: string;
   value: number | string;
   color: string;
+  trend?: { value: string; isPositive: boolean };
+  subtitle?: string;
 }) => (
-  <div className="bg-white rounded-2xl border border-slate-200 p-5">
-    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${color}`}>
-      <Icon className="w-5 h-5" />
+  <div className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between mb-3">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${color}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      {trend && (
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${
+            trend.isPositive
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-red-50 text-red-700'
+          }`}
+        >
+          <TrendingUp className={`w-3 h-3 ${!trend.isPositive ? 'rotate-180' : ''}`} />
+          {trend.value}
+        </span>
+      )}
     </div>
     <p className="text-3xl font-bold text-slate-900 leading-none">{value}</p>
     <p className="text-sm font-medium text-slate-600 mt-1.5">{label}</p>
+    {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
   </div>
 );
 
 // ============================================
-// SECTION CARD
+// SECTION ROW
 // ============================================
 const SectionRow = ({
   section,
@@ -255,6 +274,9 @@ export const Sections: React.FC = () => {
   const activeSections = sections.filter((s) => s.status === 'active').length;
   const fullSections = sections.filter((s) => s.status === 'full').length;
   const totalStudents = sections.reduce((sum, s) => sum + s.current_enrollment, 0);
+  const totalCapacity = sections.reduce((sum, s) => sum + s.max_capacity, 0);
+  const averageOccupancy =
+    totalCapacity > 0 ? Math.round((totalStudents / totalCapacity) * 100) : 0;
 
   // ============================================
   // ACTIONS
@@ -326,24 +348,31 @@ export const Sections: React.FC = () => {
           label="Total Sections"
           value={totalSections}
           color="bg-cyan-50 text-cyan-600"
+          trend={{ value: `${activeSections} active`, isPositive: activeSections > 0 }}
         />
         <StatCard
           icon={Check}
           label="Active"
           value={activeSections}
           color="bg-emerald-50 text-emerald-600"
+          subtitle={`${totalSections - activeSections} inactive/full`}
         />
         <StatCard
           icon={AlertCircle}
           label="Full"
           value={fullSections}
           color="bg-amber-50 text-amber-600"
+          subtitle={fullSections > 0 ? 'Requires attention' : 'All have capacity'}
         />
         <StatCard
           icon={GraduationCap}
           label="Total Students"
           value={totalStudents}
           color="bg-purple-50 text-purple-600"
+          trend={{
+            value: `${averageOccupancy}% occupied`,
+            isPositive: averageOccupancy < 90,
+          }}
         />
       </div>
 
@@ -351,10 +380,23 @@ export const Sections: React.FC = () => {
       {/* FILTER PANEL */}
       {/* ============================================ */}
       {showFilterPanel && (
-        <Card className="p-5">
+        <Card className="p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-900">Filter Sections</h3>
+            <button
+              onClick={() => setShowFilterPanel(false)}
+              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              aria-label="Close filter panel"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Academic Year</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                Academic Year
+              </label>
               <select
                 value={filters.academicYear || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, academicYear: e.target.value }))}

@@ -1,12 +1,11 @@
-// src/services/api.ts
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-
+import axios from 'axios';
+import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 class ApiClient {
   private client: AxiosInstance;
   private static instance: ApiClient;
 
   private constructor() {
-    const baseURL = 'http://localhost:5000/api';
+    const baseURL = 'https://automatedschedule.onrender.com/api';
 
     this.client = axios.create({
       baseURL: baseURL,

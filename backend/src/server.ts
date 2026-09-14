@@ -109,6 +109,17 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+
+// ============================================
+// API ROOT
+// ============================================
+app.get('/api', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'AutomatedSchedule API is running!',
+    version: '1.0.0',
+  });
+});
 // ============================================
 // HEALTH CHECK
 // ============================================

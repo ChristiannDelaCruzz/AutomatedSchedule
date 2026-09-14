@@ -1,6 +1,7 @@
 // src/pages/Admin/EnrollmentReview.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, RefreshCw, FileText } from 'lucide-react';
 import { useEnrollment } from '../../context/EnrollmentContext';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../../components/ui/Button/Button';
@@ -111,6 +112,17 @@ export const EnrollmentReview: React.FC = () => {
   }, []);
 
   // ============================================
+  // NAVIGATION HANDLERS
+  // ============================================
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleViewSentEmails = () => {
+    navigate('/admin/sent-emails');
+  };
+
+  // ============================================
   // APPROVE HANDLER
   // ============================================
   const handleApprove = async (id: string) => {
@@ -209,18 +221,46 @@ export const EnrollmentReview: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Enrollment Management</h1>
-          <p className="text-slate-500 text-sm">Review and manage student enrollment applications.</p>
+      {/* ============================================ */}
+      {/* HEADER WITH BREADCRUMB + ACTIONS */}
+      {/* ============================================ */}
+      <div className="flex flex-col gap-4">
+        {/* Breadcrumb */}
+        <button
+          onClick={handleBackToDashboard}
+          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-navy transition-colors group w-fit"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          Back to Dashboard
+        </button>
+
+        {/* Title + Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Enrollment Management</h1>
+            <p className="text-slate-500 text-sm">
+              Review and manage student enrollment applications.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleViewSentEmails}
+              variant="outline"
+              className="flex items-center gap-2 border-slate-200"
+            >
+              <FileText className="w-4 h-4" />
+              Sent Emails
+            </Button>
+            <Button
+              onClick={() => fetchApplications()}
+              variant="outline"
+              className="flex items-center gap-2 border-slate-200"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => fetchApplications()} variant="outline" className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh
-        </Button>
       </div>
 
       {/* Stats Cards */}
