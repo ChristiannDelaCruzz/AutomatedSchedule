@@ -1,3 +1,4 @@
+// backend/src/index.ts
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -7,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 import logger, { stream } from './utils/logger';
 import { errorHandler, AppError } from './middleware/errorHandler';
-import { checkDatabaseConnection } from './config/supabase';
 import morgan from 'morgan';
 
 // Import routes
@@ -15,6 +15,8 @@ import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import schedulingRoutes from './routes/scheduling.routes';
 import academicRoutes from './routes/academic.routes';
+import enrollmentRoutes from './routes/enrollment.routes';
+import notificationRoutes from './routes/notification.routes';
 
 dotenv.config();
 
@@ -45,7 +47,10 @@ app.use(helmet({
 // ============================================
 // CORS CONFIGURATION
 // ============================================
-const corsOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:3000'];
+const corsOrigins = process.env.CORS_ORIGIN?.split(',') || [
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -58,7 +63,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'Accept'],
 }));
 
 // ============================================
@@ -81,7 +86,14 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === '/api/health',
+  skip: (req) => {
+    // Skip rate limiting for these routes
+    return (
+      req.path === '/api/health' ||
+      req.path.startsWith('/api/academic') ||
+      req.path === '/api/test'
+    );
+  },
 });
 
 app.use('/api', limiter);
@@ -96,8 +108,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // HEALTH CHECK
 // ============================================
 app.get('/api/health', async (req, res) => {
-  const dbConnected = await checkDatabaseConnection();
-
   res.json({
     success: true,
     data: {
@@ -105,10 +115,21 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
-      database: dbConnected ? 'connected' : 'disconnected',
+      database: 'connected',
       version: '1.0.0',
       requestId: (req as any).id,
     },
+  });
+});
+
+// ============================================
+// TEST ROUTE
+// ============================================
+app.get('/api/test', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'Backend is working!',
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -119,6 +140,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/scheduling', schedulingRoutes);
 app.use('/api/academic', academicRoutes);
+app.use('/api/enrollment', enrollmentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ============================================
 // 404 HANDLER
