@@ -1,7 +1,6 @@
 import axios from 'axios';
-import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 class ApiClient {
-  private client: AxiosInstance;
+  private client: ReturnType<typeof axios.create>;
   private static instance: ApiClient;
 
   private constructor() {
@@ -33,7 +32,7 @@ class ApiClient {
     return ApiClient.instance;
   }
 
-  private handleRequest = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+  private handleRequest = (config: any): any => {
     const publicRoutes = ['/academic', '/enrollment', '/health', '/test-db'];
     const isPublic = publicRoutes.some(route => config.url?.includes(route));
     
@@ -46,7 +45,7 @@ class ApiClient {
     return config;
   };
 
-  private handleRequestError = (error: AxiosError): Promise<never> => {
+  private handleRequestError = (error: any): Promise<never> => {
     return Promise.reject(error);
   };
 
@@ -56,7 +55,7 @@ class ApiClient {
   };
 
   // src/services/api.ts - Update the handleResponseError method
-  private handleResponseError = (error: AxiosError): Promise<never> => {
+  private handleResponseError = (error: any): Promise<never> => {
     const errorResponse = error.response?.data as any;
     
     if (error.response?.status === 401) {
